@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Bar } from "react-chartjs-2";
+import { Line } from "react-chartjs-2";
 import axios from "axios";
 
 interface Expense {
@@ -10,7 +10,7 @@ interface Expense {
   description: string;
 }
 
-const ExpenseChart: React.FC = () => {
+const ExpenseByDateChart: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
 
   useEffect(() => {
@@ -26,23 +26,21 @@ const ExpenseChart: React.FC = () => {
     fetchExpenses();
   }, []);
 
-  const categoryMap: { [key: string]: number } = {};
-  expenses.forEach((expense) => {
-    categoryMap[expense.category] =
-      (categoryMap[expense.category] || 0) + expense.amount;
-  });
-
-  const categories = Object.keys(categoryMap);
-  const amounts = categories.map((category) => categoryMap[category]);
+  const sortedExpenses = [...expenses].sort(
+    (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+  );
+  const dates = sortedExpenses.map((expense) => expense.date);
+  const amounts = sortedExpenses.map((expense) => expense.amount);
 
   const data = {
-    labels: categories,
+    labels: dates,
     datasets: [
       {
-        label: "Expenses by Category",
+        label: "Expenses by Date",
         data: amounts,
-        backgroundColor: "rgba(75, 192, 192, 0.2)",
-        borderColor: "rgba(75, 192, 192, 1)",
+        fill: false,
+        backgroundColor: "rgba(153, 102, 255, 0.2)",
+        borderColor: "rgba(153, 102, 255, 1)",
         borderWidth: 1,
       },
     ],
@@ -50,10 +48,10 @@ const ExpenseChart: React.FC = () => {
 
   return (
     <div>
-      <h2>Expense Chart</h2>
-      <Bar data={data} />
+      <h2>Expenses by Date</h2>
+      <Line data={data} />
     </div>
   );
 };
 
-export default ExpenseChart;
+export default ExpenseByDateChart;

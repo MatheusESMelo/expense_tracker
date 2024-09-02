@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import EditExpense from "./EditExpense";
+import "../styles/ExpenseListCss.css";
 
 interface Expense {
   id: number;
@@ -13,19 +14,41 @@ interface Expense {
 const ExpenseList: React.FC = () => {
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [editExpenseId, setEditExpenseId] = useState<number | null>(null);
+  const [sortColumn, setSortColumn] = useState<string>("date");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
+
+  // Extracted fetchExpenses function to be used across the component
+  const fetchExpenses = async () => {
+    try {
+      const response = await axios.get("http://127.0.0.1:8000/expenses/");
+      setExpenses(response.data);
+    } catch (error) {
+      console.error("Error fetching expenses:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchExpenses = async () => {
-      try {
-        const response = await axios.get("http://127.0.0.1:8000/expenses/");
-        setExpenses(response.data);
-      } catch (error) {
-        console.error("Error fetching expenses:", error);
-      }
-    };
-
     fetchExpenses();
   }, []);
+
+  const handleSort = (column: string) => {
+    const newDirection =
+      sortColumn === column && sortDirection === "asc" ? "desc" : "asc";
+    setSortColumn(column);
+    setSortDirection(newDirection);
+
+    const sortedExpenses = [...expenses].sort((a, b) => {
+      if (a[column as keyof Expense] < b[column as keyof Expense]) {
+        return newDirection === "asc" ? -1 : 1;
+      }
+      if (a[column as keyof Expense] > b[column as keyof Expense]) {
+        return newDirection === "asc" ? 1 : -1;
+      }
+      return 0;
+    });
+
+    setExpenses(sortedExpenses);
+  };
 
   const handleEditClick = (id: number) => {
     setEditExpenseId(id);
@@ -33,7 +56,7 @@ const ExpenseList: React.FC = () => {
 
   const handleCloseEdit = () => {
     setEditExpenseId(null);
-    fetchExpenses();
+    fetchExpenses(); // This function is now available for use here
   };
 
   const handleDelete = async (id: number) => {
@@ -45,15 +68,6 @@ const ExpenseList: React.FC = () => {
     }
   };
 
-  const fetchExpenses = async () => {
-    try {
-      const response = await axios.get("http://127.0.0.1:8000/expenses/");
-      setExpenses(response.data);
-    } catch (error) {
-      console.error("Error fetching expenses:", error);
-    }
-  };
-
   return (
     <div>
       <h2>Expense List</h2>
@@ -61,26 +75,50 @@ const ExpenseList: React.FC = () => {
         <EditExpense expenseId={editExpenseId} onClose={handleCloseEdit} />
       )}
       {expenses.length > 0 ? (
-        <ul>
-          {expenses.map((expense) => (
-            <li key={expense.id}>
-              <p>
-                <strong>Date:</strong> {expense.date}
-              </p>
-              <p>
-                <strong>Category:</strong> {expense.category}
-              </p>
-              <p>
-                <strong>Amount:</strong> ${expense.amount}
-              </p>
-              <p>
-                <strong>Description:</strong> {expense.description}
-              </p>
-              <button onClick={() => handleEditClick(expense.id)}>Edit</button>
-              <button onClick={() => handleDelete(expense.id)}>Delete</button>
-            </li>
-          ))}
-        </ul>
+        <table className="expense-table">
+          <thead>
+            <tr>
+              <th onClick={() => handleSort("date")}>
+                Date{" "}
+                {sortColumn === "date" && (sortDirection === "asc" ? "▲" : "▼")}
+              </th>
+              <th onClick={() => handleSort("category")}>
+                Category{" "}
+                {sortColumn === "category" &&
+                  (sortDirection === "asc" ? "▲" : "▼")}
+              </th>
+              <th onClick={() => handleSort("amount")}>
+                Amount{" "}
+                {sortColumn === "amount" &&
+                  (sortDirection === "asc" ? "▲" : "▼")}
+              </th>
+              <th onClick={() => handleSort("description")}>
+                Description{" "}
+                {sortColumn === "description" &&
+                  (sortDirection === "asc" ? "▲" : "▼")}
+              </th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {expenses.map((expense) => (
+              <tr key={expense.id}>
+                <td>{expense.date}</td>
+                <td>{expense.category}</td>
+                <td>${expense.amount}</td>
+                <td>{expense.description}</td>
+                <td>
+                  <button onClick={() => handleEditClick(expense.id)}>
+                    Edit
+                  </button>
+                  <button onClick={() => handleDelete(expense.id)}>
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       ) : (
         <p>No expenses found.</p>
       )}

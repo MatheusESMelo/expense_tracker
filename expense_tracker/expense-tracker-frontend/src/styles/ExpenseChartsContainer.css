@@ -1,0 +1,13 @@
+.charts-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+  gap: 20px;
+  padding: 20px;
+}
+
+.charts-container > div {
+  flex: 1 1 300px;
+  min-width: 300px;
+  max-width: 600px;
+}
